@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="My Tasks">
+<title>My Daily Tasks</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #1a1a2e;
+  color: #f0f0f0;
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+.app { max-width: 480px; margin: 0 auto; padding: 0 16px; }
+.header { text-align: center; padding: 50px 0 16px; }
+.header h1 { font-size: 26px; font-weight: 800; }
+.hl { color: #ffb830; }
+.date-lbl { font-size: 13px; color: #8892a4; margin-top: 4px; }
+.progress-wrap { margin-bottom: 8px; }
+.p-labels { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+.p-done-lbl { color: #00c897; }
+.p-total-lbl { color: #8892a4; }
+.p-track { height: 10px; background: rgba(255,255,255,0.1); border-radius: 20px; overflow: hidden; margin-bottom: 16px; }
+.p-fill { height: 100%; border-radius: 20px; background: #00c897; transition: width 0.5s; }
+.stars-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; font-size: 24px; }
+.star { opacity: 0.2; display: inline-block; transition: opacity 0.4s, transform 0.4s; }
+.star.on { opacity: 1; transform: scale(1.2); }
+.task-list { display: flex; flex-direction: column; gap: 12px; }
+.task-card { background: #16213e; border-radius: 18px; padding: 16px; border: 1.5px solid transparent; }
+.task-card.is-active { border-color: #00c897; background: #0d2620; }
+.task-card.is-done { opacity: 0.45; }
+.task-card.is-locked { opacity: 0.3; }
+.card-top { display: flex; align-items: center; gap: 12px; }
+.card-icon { width: 48px; height: 48px; border-radius: 14px; background: rgba(255,255,255,0.07); display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; }
+.card-info { flex: 1; min-width: 0; }
+.card-name { font-size: 16px; font-weight: 700; }
+.card-sub { font-size: 12px; color: #8892a4; margin-top: 3px; }
+.card-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; flex-shrink: 0; }
+.bwait { background: rgba(255,255,255,0.07); color: #8892a4; }
+.bactive { background: rgba(0,200,151,0.15); color: #00c897; }
+.bdone { background: rgba(0,200,151,0.12); color: #00c897; }
+.blocked { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.2); }
+.timer-wrap { margin-top: 12px; }
+.t-track { height: 8px; background: rgba(255,255,255,0.07); border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
+.t-fill { height: 100%; border-radius: 10px; transition: width 1s linear; }
+.t-row { display: flex; justify-content: space-between; align-items: center; }
+.t-lbl { font-size: 12px; color: #8892a4; font-weight: 600; }
+.t-clock { font-size: 30px; font-weight: 800; letter-spacing: -1px; }
+.t-clock.urgent { color: #e94560; }
+.btn-start { display: block; width: 100%; margin-top: 12px; padding: 14px; background: #a855f7; border: none; border-radius: 12px; color: white; font-family: inherit; font-size: 16px; font-weight: 800; cursor: pointer; }
+.btn-start:active { opacity: 0.8; }
+.btn-done { display: block; width: 100%; margin-top: 10px; padding: 14px; background: #00c897; border: none; border-radius: 12px; color: #061a12; font-family: inherit; font-size: 16px; font-weight: 800; cursor: pointer; }
+.btn-done:active { opacity: 0.8; }
+.alarm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.82); z-index: 999; align-items: center; justify-content: center; padding: 24px; }
+.alarm-box { background: #16213e; border-radius: 24px; padding: 32px 24px; text-align: center; max-width: 320px; width: 100%; border: 1.5px solid rgba(255,184,48,0.4); }
+.alarm-big { font-size: 60px; display: block; margin-bottom: 10px; }
+.alarm-box h2 { font-size: 22px; font-weight: 800; color: #ffb830; margin-bottom: 8px; }
+.alarm-box p { font-size: 14px; color: #8892a4; margin-bottom: 24px; line-height: 1.5; }
+.btn-alarm { display: block; width: 100%; padding: 15px; background: #ffb830; border: none; border-radius: 12px; color: #1a1200; font-family: inherit; font-size: 17px; font-weight: 800; cursor: pointer; }
+.finish-card { background: #0d2620; border: 1.5px solid #00c897; border-radius: 18px; padding: 24px; text-align: center; margin-bottom: 16px; }
+.finish-card .big { font-size: 52px; display: block; margin-bottom: 8px; }
+.finish-card h2 { font-size: 20px; font-weight: 800; color: #00c897; margin-bottom: 4px; }
+.finish-card p { font-size: 13px; color: #5dcea0; }
+.summary-card { background: #16213e; border-radius: 18px; padding: 18px; }
+.summary-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+.sum-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; }
+.sum-row:last-child { border-bottom: none; padding-bottom: 0; }
+.sum-lbl { color: #8892a4; }
+.sum-val { font-weight: 700; }
+.cgreen { color: #00c897; }
+.camber { color: #ffb830; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>⭐ My <span class="hl">Daily</span> Tasks ⭐</h1>
+    <div class="date-lbl" id="dateLabel"></div>
+  </div>
+  <div class="progress-wrap">
+    <div class="p-labels">
+      <span class="p-done-lbl" id="doneLbl">0 done</span>
+      <span class="p-total-lbl">4 tasks today</span>
+    </div>
+    <div class="p-track"><div class="p-fill" id="pFill" style="width:0%"></div></div>
+  </div>
+  <div class="stars-row">
+    <span class="star" id="s0">⭐</span>
+    <span class="star" id="s1">⭐</span>
+    <span class="star" id="s2">⭐</span>
+    <span class="star" id="s3">⭐</span>
+  </div>
+  <div class="task-list" id="taskList"></div>
+  <div id="summaryArea" style="margin-top:20px"></div>
+</div>
+
+<div class="alarm-overlay" id="alarmOverlay">
+  <div class="alarm-box">
+    <span class="alarm-big">⏰</span>
+    <h2>Time's Up!</h2>
+    <p id="alarmText">Great work! Tap done when you're finished.</p>
+    <button class="btn-alarm" onclick="dismissAlarm()">I'm Done! 🎉</button>
+  </div>
+</div>
+
+<script>
+var TASKS = [
+  { id:1, name:"Dutch Reading",   emoji:"🇳🇱", mins:10 },
+  { id:2, name:"English Reading", emoji:"🇬🇧", mins:10 },
+  { id:3, name:"Math",            emoji:"🔢",  mins:30 },
+  { id:4, name:"Chinese Writing", emoji:"🀄",  mins:30 }
+];
+
+var state = [];
+for (var i=0; i<TASKS.length; i++) {
+  state.push({ id:TASKS[i].id, name:TASKS[i].name, emoji:TASKS[i].emoji, mins:TASKS[i].mins, status:"waiting", startTime:null, elapsed:null });
+}
+
+var ticker = null;
+
+var d = new Date();
+var DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+document.getElementById("dateLabel").textContent = DAYS[d.getDay()] + ", " + d.getDate() + " " + MONTHS[d.getMonth()] + " " + d.getFullYear();
+
+function getTask(id) { for (var i=0;i<state.length;i++) { if(state[i].id===id) return state[i]; } return null; }
+function countDone() { var n=0; for(var i=0;i<state.length;i++){if(state[i].status==="done")n++;} return n; }
+function firstAvailIdx() { for(var i=0;i<state.length;i++){if(state[i].status==="waiting"&&(i===0||state[i-1].status==="done"))return i;} return -1; }
+
+function startTask(id) {
+  if (ticker) { clearInterval(ticker); ticker=null; }
+  var t = getTask(id);
+  if (!t) return;
+  t.status = "active";
+  t.startTime = Date.now();
+  render();
+  ticker = setInterval(function() {
+    var tk = getTask(id);
+    if (!tk || tk.status !== "active") { clearInterval(ticker); ticker=null; return; }
+    if ((Date.now() - tk.startTime)/1000 >= tk.mins*60) {
+      clearInterval(ticker); ticker=null;
+      fireAlarm(tk);
+    }
+    render();
+  }, 500);
+}
+
+function fireAlarm(task) {
+  document.getElementById("alarmText").textContent = '"' + task.name + '" time is up! Tap done when finished.';
+  document.getElementById("alarmOverlay").style.display = "flex";
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var times = [0, 0.45, 0.9];
+    for (var i=0; i<times.length; i++) {
+      (function(t){
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value = 880;
+        g.gain.setValueAtTime(0.35, ctx.currentTime+t);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+t+0.35);
+        o.start(ctx.currentTime+t); o.stop(ctx.currentTime+t+0.4);
+      })(times[i]);
+    }
+  } catch(e){}
+}
+
+function dismissAlarm() {
+  document.getElementById("alarmOverlay").style.display = "none";
+}
+
+function markDone(id) {
+  if (ticker) { clearInterval(ticker); ticker=null; }
+  dismissAlarm();
+  var t = getTask(id);
+  if (!t) return;
+  t.elapsed = t.startTime ? Math.round((Date.now()-t.startTime)/1000) : 0;
+  t.status = "done";
+  updateStars();
+  if (countDone() === state.length) {
+    document.getElementById("taskList").innerHTML = "";
+    renderSummary(true);
+  } else {
+    render();
+    renderSummary(false);
+  }
+}
+
+function fmtCD(task) {
+  if (!task.startTime) return task.mins+":00";
+  var rem = Math.max(0, task.mins*60 - Math.floor((Date.now()-task.startTime)/1000));
+  var m = Math.floor(rem/60), s = rem%60;
+  return m+":"+(s<10?"0":"")+s;
+}
+
+function barPct(task) {
+  if (!task.startTime) return 100;
+  return Math.max(0, 100-((Date.now()-task.startTime)/1000)/(task.mins*60)*100);
+}
+
+function bColor(p) { return p>50?"#00c897":p>20?"#ffb830":"#e94560"; }
+function fmtT(s) { if(s===null||s===undefined)return "--"; return Math.floor(s/60)+"m "+(s%60)+"s"; }
+function starsFor(t) { if(!t.elapsed)return ""; var r=t.elapsed/(t.mins*60); return r<=1?"⭐⭐⭐":r<=1.3?"⭐⭐":"⭐"; }
+
+function updateStars() {
+  var done = countDone();
+  for (var i=0;i<4;i++) {
+    var el = document.getElementById("s"+i);
+    if (i<done) el.classList.add("on"); else el.classList.remove("on");
+  }
+}
+
+function render() {
+  var done = countDone();
+  document.getElementById("pFill").style.width = (done/state.length*100)+"%";
+  document.getElementById("doneLbl").textContent = done+" done";
+
+  var fa = firstAvailIdx();
+  var html = "";
+  for (var i=0; i<state.length; i++) {
+    var t = state[i];
+    var isDone = t.status==="done";
+    var isActive = t.status==="active";
+    var isReady = t.status==="waiting" && i===fa;
+    var isLocked = t.status==="waiting" && i!==fa;
+    var pct = isActive ? barPct(t) : 100;
+    var rem = isActive ? Math.max(0, t.mins*60-Math.floor((Date.now()-t.startTime)/1000)) : 999;
+    var urgent = isActive && rem<60;
+    var cardCls = "task-card"+(isActive?" is-active":"")+(isDone?" is-done":"")+(isLocked?" is-locked":"");
+    var badgeCls = isDone?"bdone":isActive?"bactive":isLocked?"blocked":"bwait";
+    var badgeTxt = isDone?"✅ Done":isActive?"⏳ Now":isLocked?"🔒":"▶️ Next";
+    var sub = t.mins+" min"+(isDone?" · "+fmtT(t.elapsed)+" "+starsFor(t):"");
+
+    html += '<div class="'+cardCls+'">';
+    html += '<div class="card-top">';
+    html += '<div class="card-icon">'+t.emoji+'</div>';
+    html += '<div class="card-info"><div class="card-name">'+t.name+'</div><div class="card-sub">'+sub+'</div></div>';
+    html += '<span class="card-badge '+badgeCls+'">'+badgeTxt+'</span>';
+    html += '</div>';
+    if (isActive) {
+      html += '<div class="timer-wrap">';
+      html += '<div class="t-track"><div class="t-fill" style="width:'+pct.toFixed(1)+'%;background:'+bColor(pct)+'"></div></div>';
+      html += '<div class="t-row"><span class="t-lbl">Time left</span><span class="t-clock'+(urgent?' urgent':'')+'"">'+fmtCD(t)+'</span></div>';
+      html += '</div>';
+      html += '<button class="btn-done" onclick="markDone('+t.id+')">✅ Mark as Done!</button>';
+    } else if (isReady) {
+      html += '<button class="btn-start" onclick="startTask('+t.id+')">▶️ Start Timer</button>';
+    }
+    html += '</div>';
+  }
+  document.getElementById("taskList").innerHTML = html;
+}
+
+function renderSummary(allDone) {
+  var done = [];
+  for (var i=0;i<state.length;i++){if(state[i].status==="done")done.push(state[i]);}
+  if (!done.length) { document.getElementById("summaryArea").innerHTML=""; return; }
+  var total=0;
+  for(var j=0;j<done.length;j++) total+=done[j].elapsed||0;
+  var allOT = true;
+  for(var k=0;k<done.length;k++){if(done[k].elapsed>done[k].mins*60){allOT=false;break;}}
+  var html="";
+  if (allDone) {
+    html+='<div class="finish-card"><span class="big">🎉</span><h2>All Done! Amazing!</h2>';
+    html+='<p>'+(allOT?"Perfect! Everything on time. You are a superstar! ⭐⭐⭐⭐":"Great job finishing all tasks today!")+'</p></div>';
+  }
+  html+='<div class="summary-card"><h3>📊 Today\'s Progress</h3>';
+  for(var m=0;m<done.length;m++){
+    var t=done[m], ot=t.elapsed<=t.mins*60;
+    html+='<div class="sum-row"><span class="sum-lbl">'+t.emoji+' '+t.name+'</span><span class="sum-val '+(ot?"cgreen":"camber")+'">'+fmtT(t.elapsed)+' '+starsFor(t)+'</span></div>';
+  }
+  html+='<div class="sum-row"><span class="sum-lbl">⏱ Total time</span><span class="sum-val">'+fmtT(total)+'</span></div>';
+  html+='<div class="sum-row"><span class="sum-lbl">✅ Completed</span><span class="sum-val cgreen">'+done.length+' / '+state.length+'</span></div>';
+  html+='</div>';
+  document.getElementById("summaryArea").innerHTML=html;
+}
+
+render();
+</script>
+</body>
+</html>
